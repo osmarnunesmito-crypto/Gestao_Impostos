@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão Fiscal & Apuração Tributária - SMM e SIMONE</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        ocean: {
+                            900: '#0b132b',
+                            800: '#1c2541',
+                            700: '#3a506b',
+                            600: '#5bc0be',
+                            500: '#6fffe9',
+                        },
+                        gold: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            accent: '#FFD700'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 dark:bg-[#0b132b] dark:text-slate-100 min-h-screen font-sans transition-colors duration-300">
+
+    <!-- Top Navigation / Header -->
+    <header class="bg-gradient-to-r from-blue-950 via-slate-900 to-blue-900 border-b border-blue-800/40 sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-amber-500 flex items-center justify-center shadow-md shadow-amber-500/20">
+                    <i class="fa-solid fa-chart-pie text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide text-white flex items-center gap-2">
+                        <span>Gestão Fiscal Inteligente</span>
+                        <span class="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 font-semibold">SMM & SIMONE</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Controle de Faturamento, Retenções e Apuração de Tributos</p>
+                </div>
+            </div>
+
+            <!-- Controles Globais / Filtros -->
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Filtro Empresa -->
+                <div class="flex items-center bg-slate-800/80 border border-blue-700/50 rounded-lg px-3 py-1.5 shadow-inner">
+                    <span class="text-xs text-slate-400 mr-2"><i class="fa-solid fa-building"></i> Empresa:</span>
+                    <select id="filterEmpresa" onchange="renderApp()" class="bg-transparent text-sm font-semibold text-amber-400 focus:outline-none cursor-pointer">
+                        <option value="TODAS" class="bg-slate-900">Todas as Empresas</option>
+                        <option value="SMM" class="bg-slate-900">SMM</option>
+                        <option value="SIMONE" class="bg-slate-900">SIMONE</option>
+                    </select>
+                </div>
+
+                <!-- Filtro Mês -->
+                <div class="flex items-center bg-slate-800/80 border border-blue-700/50 rounded-lg px-3 py-1.5 shadow-inner">
+                    <span class="text-xs text-slate-400 mr-2"><i class="fa-solid fa-calendar"></i> Mês:</span>
+                    <select id="filterMes" onchange="renderApp()" class="bg-transparent text-sm font-semibold text-amber-400 focus:outline-none cursor-pointer">
+                        <option value="TODOS" class="bg-slate-900">Todos os Meses</option>
+                        <option value="01/2026" class="bg-slate-900">Janeiro/2026</option>
+                        <option value="02/2026" class="bg-slate-900">Fevereiro/2026</option>
+                        <option value="03/2026" class="bg-slate-900">Março/2026</option>
+                        <option value="04/2026" class="bg-slate-900">Abril/2026</option>
+                        <option value="05/2026" class="bg-slate-900">Maio/2026</option>
+                        <option value="06/2026" class="bg-slate-900">Junho/2026</option>
+                        <option value="07/2026" class="bg-slate-900">Julho/2026</option>
+                        <option value="08/2026" class="bg-slate-900">Agosto/2026</option>
+                        <option value="09/2026" class="bg-slate-900">Setembro/2026</option>
+                        <option value="10/2026" class="bg-slate-900">Outubro/2026</option>
+                        <option value="11/2026" class="bg-slate-900">Novembro/2026</option>
+                        <option value="12/2026" class="bg-slate-900">Dezembro/2026</option>
+                    </select>
+                </div>
+
+                <!-- Botão Tema -->
+                <button onclick="toggleTheme()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-blue-700/40 text-amber-400 transition" title="Alternar Tema Claro/Escuro">
+                    <i id="themeIcon" class="fa-solid fa-sun"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+        <!-- Barra de Ações Rápidas -->
+        <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-800/60 backdrop-blur-md p-4 rounded-xl border border-blue-700/30 shadow-md">
+            <div class="flex flex-wrap items-center gap-3">
+                <button onclick="openModal('notaModal')" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-semibold rounded-lg shadow transition flex items-center gap-2 text-sm cursor-pointer">
+                    <i class="fa-solid fa-plus-circle"></i> Nova Nota Fiscal
+                </button>
+                <button onclick="openModal('aliquotaModal')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-amber-400 font-semibold rounded-lg border border-amber-500/30 shadow transition flex items-center gap-2 text-sm cursor-pointer">
+                    <i class="fa-solid fa-percent"></i> Configurar Alíquotas
+                </button>
+                <label class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-cyan-300 font-semibold rounded-lg border border-cyan-500/30 shadow transition flex items-center gap-2 text-sm cursor-pointer">
+                    <i class="fa-solid fa-file-excel"></i> Importar Planilha
+                    <input type="file" id="importFile" accept=".xlsx, .xls, .csv" class="hidden" onchange="importarPlanilha(event)">
+                </label>
+            </div>
+            <div>
+                <button onclick="confirmarLimparTudo()" class="px-3 py-2 bg-red-950/60 hover:bg-red-900 text-red-300 rounded-lg border border-red-700/50 transition flex items-center gap-2 text-xs cursor-pointer">
+                    <i class="fa-solid fa-trash-can"></i> Limpar Dados
+                </button>
+            </div>
+        </div>
+
+        <!-- Dashboard KPIs -->
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Card 1: Faturamento Total -->
+            <div class="bg-gradient-to-br from-slate-800 to-blue-950 p-5 rounded-2xl border border-blue-500/30 shadow-lg relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 text-blue-600/10 text-7xl font-bold"><i class="fa-solid fa-wallet"></i></div>
+                <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Total Geral Faturado</p>
+                <h3 id="kpiFaturamento" class="text-2xl font-black text-amber-400 mt-2">R$ 0,00</h3>
+                <div class="mt-3 pt-3 border-t border-blue-800/40 flex justify-between text-xs text-slate-300">
+                    <span>Sem Retenção: <strong id="kpiSemRetencao" class="text-white">R$ 0,00</strong></span>
+                    <span>Com Retenção: <strong id="kpiComRetencao" class="text-white">R$ 0,00</strong></span>
+                </div>
+            </div>
+
+            <!-- Card 2: ISS Total -->
+            <div class="bg-gradient-to-br from-slate-800 to-blue-950 p-5 rounded-2xl border border-blue-500/30 shadow-lg relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 text-blue-600/10 text-7xl font-bold"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Total Geral de ISS</p>
+                <h3 id="kpiIss" class="text-2xl font-black text-amber-400 mt-2">R$ 0,00</h3>
+                <p class="mt-3 pt-3 border-t border-blue-800/40 text-xs text-slate-300">
+                    Retido na fonte (SMM + SIMONE)
+                </p>
+            </div>
+
+            <!-- Card 3: Simples Nacional -->
+            <div class="bg-gradient-to-br from-slate-800 to-blue-950 p-5 rounded-2xl border border-blue-500/30 shadow-lg relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 text-blue-600/10 text-7xl font-bold"><i class="fa-solid fa-receipt"></i></div>
+                <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Total Simples Nacional</p>
+                <h3 id="kpiSimples" class="text-2xl font-black text-amber-400 mt-2">R$ 0,00</h3>
+                <p class="mt-3 pt-3 border-t border-blue-800/40 text-xs text-slate-300">
+                    Estimativa s/ faturamento total
+                </p>
+            </div>
+
+            <!-- Card 4: Impostos das Empresas -->
+            <div class="bg-gradient-to-br from-slate-800 to-blue-950 p-5 rounded-2xl border border-amber-500/40 shadow-lg relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 text-amber-500/10 text-7xl font-bold"><i class="fa-solid fa-calculator"></i></div>
+                <p class="text-xs uppercase tracking-wider text-amber-300 font-medium">Total Impostos das Empresas</p>
+                <h3 id="kpiTotalImpostos" class="text-2xl font-black text-amber-400 mt-2">R$ 0,00</h3>
+                <p class="mt-3 pt-3 border-t border-blue-800/40 text-xs text-slate-300">
+                    SMM + SIMONE (Estimativa Total)
+                </p>
+            </div>
+        </section>
+
+        <!-- Comparativo de Vantagem Fiscal -->
+        <section class="bg-gradient-to-r from-blue-900/40 via-slate-800 to-blue-950/40 p-5 rounded-2xl border border-amber-500/30 shadow-xl">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-scale-balanced text-amber-400"></i> Comparativo de Vantagem Fiscal
+                </h3>
+                <span class="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full font-medium">Análise de Imposto Proporcional</span>
+            </div>
+            <div id="vantagemFiscalContainer" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <!-- Conteúdo Dinâmico -->
+            </div>
+        </section>
+
+        <!-- Resumo Consolidado por Empresa -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="resumoEmpresasContainer">
+            <!-- Blocos das Empresas -->
+        </div>
+
+        <!-- Tabela de Lançamentos -->
+        <section class="bg-slate-800/80 backdrop-blur-md rounded-2xl border border-blue-700/40 shadow-xl overflow-hidden">
+            <div class="p-4 bg-slate-900/60 border-b border-blue-700/40 flex items-center justify-between">
+                <h3 class="font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-list text-blue-400"></i> Lançamentos de Notas Fiscais
+                </h3>
+                <span id="contadorRegistros" class="text-xs text-slate-400 bg-slate-700/50 px-2 py-1 rounded">0 registros</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-blue-950/80 text-amber-400 uppercase text-xs tracking-wider border-b border-blue-800/60">
+                            <th class="p-3">Empresa</th>
+                            <th class="p-3">Data</th>
+                            <th class="p-3">NFS-e</th>
+                            <th class="p-3">CPF/CNPJ</th>
+                            <th class="p-3">Tomador</th>
+                            <th class="p-3">Status</th>
+                            <th class="p-3">Retenção</th>
+                            <th class="p-3 text-right">Serviço (R$)</th>
+                            <th class="p-3 text-right">ISS (R$)</th>
+                            <th class="p-3 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaNotasBody" class="divide-y divide-blue-900/30 text-slate-200">
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal Form Nota Fiscal -->
+    <div id="notaModal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-blue-700/50 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-900 to-slate-900 p-4 border-b border-blue-800 flex justify-between items-center">
+                <h3 id="modalTitle" class="font-bold text-white text-base flex items-center gap-2">
+                    <i class="fa-solid fa-file-circle-plus text-amber-400"></i> Lançamento de Nota Fiscal
+                </h3>
+                <button onclick="closeModal('notaModal')" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="notaForm" onsubmit="salvarNota(event)" class="p-6 space-y-4">
+                <input type="hidden" id="notaId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Empresa</label>
+                        <select id="empresa" required class="w-full bg-slate-800 border border-blue-700/50 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-400">
+                            <option value="SMM">SMM</option>
+                            <option value="SIMONE">SIMONE</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Data da Nota</label>
+                        <input type="date" id="dataNota" required class="w-full bg-slate-800 border border-blue-700/50 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-400">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Número NFS-e</label>
+                        <input type="number" id="nfs" placeholder="Ex: 25" required class="w-full bg-slate-800 border border-blue-700/50 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">CPF / CNPJ do Tomador</label>
+                        <input type="text" id="cnpjTomador" placeholder="00.000.000/0001-00" required class="w-full bg-slate-800 border border-blue-700/50 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-400">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Nome do Tomador</label>
+                    <input type="text" id="tomador" placeholder="Ex: CIEAM CENTRO DA INDUSTRIA..." required class="w-full bg-slate-800 border border-blue-700/50 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-400">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Status</label>
+                        <select id="statusNota" class="w-full bg-slate-800 border border-blue-700/50 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-400">
+                            <option value="Emitida">Emitida</option>
+                            <option value="Cancelada">Cancelada</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Tipo de Retenção</label>
+                        <select id="retencaoTipo" class="w-full bg-slate-800 border border-blue-700/50 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-400">
+                            <option value="SEM RETENÇÃO">Sem Retenção</option>
+                            <option value="COM RETENÇÃO">Com Retenção</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Valor do Serviço (R$)</label>
+                        <input type="number" step="0.01" id="valorServico" placeholder="0.00" required class="w-full bg-slate-800 border border-blue-700/50 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-400">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Valor do ISS Retido (R$)</label>
+                    <input type="number" step="0.01" id="valorIss" placeholder="0.00 (opcional)" class="w-full bg-slate-800 border border-blue-700/50 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-400">
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4 border-t border-blue-800">
+                    <button type="button" onclick="closeModal('notaModal')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm cursor-pointer">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-lg text-sm shadow cursor-pointer">Salvar Lançamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Configuração de Alíquotas -->
+    <div id="aliquotaModal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-blue-700/50 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-900 to-slate-900 p-4 border-b border-blue-800 flex justify-between items-center">
+                <h3 class="font-bold text-white text-base flex items-center gap-2">
+                    <i class="fa-solid fa-percent text-amber-400"></i> Configuração de Alíquotas por Período
+                </h3>
+                <button onclick="closeModal('aliquotaModal')" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Competência (Mês/Ano)</label>
+                        <select id="configMesAno" onchange="carregarAliquotasNaTela()" class="w-full bg-slate-800 border border-blue-700/50 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-amber-400">
+                            <option value="01/2026">Janeiro/2026</option>
+                            <option value="02/2026">Fevereiro/2026</option>
+                            <option value="03/2026">Março/2026</option>
+                            <option value="04/2026">Abril/2026</option>
+                            <option value="05/2026">Maio/2026</option>
+                            <option value="06/2026">Junho/2026</option>
+                            <option value="07/2026">Julho/2026</option>
+                            <option value="08/2026">Agosto/2026</option>
+                            <option value="09/2026">Setembro/2026</option>
+                            <option value="10/2026">Outubro/2026</option>
+                            <option value="11/2026">Novembro/2026</option>
+                            <option value="12/2026">Dezembro/2026</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="space-y-4 pt-2 border-t border-blue-800/60">
+                    <h4 class="text-sm font-bold text-amber-400">Empresa: SMM</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Alíquota ISS (%)</label>
+                            <input type="number" step="0.01" id="smmIss" class="w-full bg-slate-800 border border-blue-700/50 rounded-lg p-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Alíquota Simples Nac. (%)</label>
+                            <input type="number" step="0.01" id="smmSimples" class="w-full bg-slate-800 border border-blue-700/50 rounded-lg p-2 text-sm text-white">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4 pt-2 border-t border-blue-800/60">
+                    <h4 class="text-sm font-bold text-amber-400">Empresa: SIMONE</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Alíquota ISS (%)</label>
+                            <input type="number" step="0.01" id="simoneIss" class="w-full bg-slate-800 border border-blue-700/50 rounded-lg p-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Alíquota Simples Nac. (%)</label>
+                            <input type="number" step="0.01" id="simoneSimples" class="w-full bg-slate-800 border border-blue-700/50 rounded-lg p-2 text-sm text-white">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4 border-t border-blue-800">
+                    <button type="button" onclick="closeModal('aliquotaModal')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarAliquotas()" class="px-5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-lg text-sm shadow cursor-pointer">Salvar Alíquotas</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dadosIniciais = [
+            { id: 1, empresa: 'SMM', data: '2026-10-30', nfs: '25', cnpj: '04.603.213/0001-69', tomador: 'CIEAM CENTRO DA INDUSTRIA DO ESTADO DO AMAZONAS', status: 'Emitida', retencao: 'SEM RETENÇÃO', servico: 5500.00, iss: 0.00 },
+            { id: 2, empresa: 'SMM', data: '2026-10-29', nfs: '24', cnpj: '04.603.213/0001-69', tomador: 'CIEAM CENTRO DA INDUSTRIA DO ESTADO DO AMAZONAS', status: 'Emitida', retencao: 'SEM RETENÇÃO', servico: 7200.00, iss: 0.00 },
+            { id: 3, empresa: 'SMM', data: '2026-10-26', nfs: '23', cnpj: '04.222.428/0001-30', tomador: 'COIMPA INDUSTRIAL LTDA', status: 'Emitida', retencao: 'COM RETENÇÃO', servico: 35480.00, iss: 713.15 },
+            { id: 4, empresa: 'SMM', data: '2026-10-21', nfs: '22', cnpj: '04.603.213/0001-69', tomador: 'CIEAM CENTRO DA INDUSTRIA DO ESTADO DO AMAZONAS', status: 'Emitida', retencao: 'SEM RETENÇÃO', servico: 9400.00, iss: 0.00 },
+            { id: 5, empresa: 'SMM', data: '2026-10-19', nfs: '21', cnpj: '08.038.545/0001-07', tomador: 'NATUREZA COMERCIO DE DESCARTAVEIS LTDA', status: 'Emitida', retencao: 'COM RETENÇÃO', servico: 5150.00, iss: 103.52 },
+            { id: 6, empresa: 'SMM', data: '2026-10-15', nfs: '20', cnpj: '47.965.438/0001-78', tomador: 'EQI INVESTIMENTOS CORRETORA DE TITULOS E VALORES MOBILIARIOS S.A.', status: 'Emitida', retencao: 'SEM RETENÇÃO', servico: 7350.00, iss: 0.00 },
+            { id: 7, empresa: 'SMM', data: '2026-10-14', nfs: '19', cnpj: '04.423.567/0012-84', tomador: 'ENEVA S.A.', status: 'Emitida', retencao: 'SEM RETENÇÃO', servico: 5600.00, iss: 0.00 },
+            { id: 8, empresa: 'SMM', data: '2026-10-09', nfs: '18', cnpj: '04.603.213/0001-69', tomador: 'CIEAM CENTRO DA INDUSTRIA DO ESTADO DO AMAZONAS', status: 'Emitida', retencao: 'SEM RETENÇÃO', servico: 2000.00, iss: 0.00 },
+            { id: 9, empresa: 'SMM', data: '2026-10-07', nfs: '17', cnpj: '00.419.147/0001-10', tomador: 'TASK LOGISTICA TRANSPORTES NACIONAIS E INTERNACIONAIS LTDA', status: 'Emitida', retencao: 'SEM RETENÇÃO', servico: 1600.00, iss: 0.00 },
+            
+            { id: 10, empresa: 'SIMONE', data: '2026-10-21', nfs: '69', cnpj: '33.000.167/1131-43', tomador: 'PETROLEO BRASILEIRO S A PETROBRAS', status: 'Emitida', retencao: 'COM RETENÇÃO', servico: 1500.00, iss: 49.80 },
+            { id: 11, empresa: 'SIMONE', data: '2026-10-19', nfs: '68', cnpj: '33.000.167/1131-43', tomador: 'PETROLEO BRASILEIRO S A PETROBRAS', status: 'Emitida', retencao: 'COM RETENÇÃO', servico: 4200.00, iss: 139.44 },
+            { id: 12, empresa: 'SIMONE', data: '2026-10-02', nfs: '67', cnpj: '00.360.305/5456-07', tomador: 'CAIXA ECONOMICA FEDERAL', status: 'Emitida', retencao: 'COM RETENÇÃO', servico: 1800.00, iss: 59.76 }
+        ];
+
+        let aliquotas = JSON.parse(localStorage.getItem('fiscal_aliquotas')) || {
+            '01/2026': { SMM: { iss: 2.21, simples: 6.00 }, SIMONE: { iss: 3.21, simples: 13.50 } },
+            '02/2026': { SMM: { iss: 2.21, simples: 6.00 }, SIMONE: { iss: 3.21, simples: 13.50 } },
+            '03/2026': { SMM: { iss: 2.21, simples: 6.00 }, SIMONE: { iss: 3.21, simples: 13.50 } },
+            '04/2026': { SMM: { iss: 2.21, simples: 6.00 }, SIMONE: { iss: 3.21, simples: 13.50 } },
+            '05/2026': { SMM: { iss: 2.21, simples: 6.00 }, SIMONE: { iss: 3.21, simples: 13.50 } },
+            '06/2026': { SMM: { iss: 2.21, simples: 6.00 }, SIMONE: { iss: 3.21, simples: 13.50 } },
+            '07/2026': { SMM: { iss: 2.21, simples: 6.00 }, SIMONE: { iss: 3.21, simples: 13.50 } },
+            '08/2026': { SMM: { iss: 2.21, simples: 6.00 }, SIMONE: { iss: 3.21, simples: 13.50 } },
+            '09/2026': { SMM: { iss: 2.21, simples: 6.00 }, SIMONE: { iss: 3.21, simples: 13.50 } },
+            '10/2026': { SMM: { iss: 2.21, simples: 6.00 }, SIMONE: { iss: 3.21, simples: 13.50 } },
+            '11/2026': { SMM: { iss: 2.21, simples: 6.00 }, SIMONE: { iss: 3.21, simples: 13.50 } },
+            '12/2026': { SMM: { iss: 2.21, simples: 6.00 }, SIMONE: { iss: 3.21, simples: 13.50 } }
+        };
+
+        let notas = JSON.parse(localStorage.getItem('fiscal_notas')) || dadosIniciais;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderApp();
+            carregarAliquotasNaTela();
+        });
+
+        function salvarLocalStorage() {
+            localStorage.setItem('fiscal_notas', JSON.stringify(notas));
+            localStorage.setItem('fiscal_aliquotas', JSON.stringify(aliquotas));
+        }
+
+        function formatarMoeda(valor) {
+            return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function openModal(id) {
+            if(id === 'notaModal') {
+                document.getElementById('notaForm').reset();
+                document.getElementById('notaId').value = '';
+                document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-file-circle-plus text-amber-400"></i> Lançamento de Nota Fiscal';
+                document.getElementById('dataNota').value = new Date().toISOString().split('T')[0];
+            }
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            if(html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                icon.className = "fa-solid fa-moon text-amber-500";
+            } else {
+                html.classList.add('dark');
+                icon.className = "fa-solid fa-sun text-amber-400";
+            }
+        }
+
+        function salvarNota(event) {
+            event.preventDefault();
+            const id = document.getElementById('notaId').value;
+            const empresa = document.getElementById('empresa').value;
+            const data = document.getElementById('dataNota').value;
+            const nfs = document.getElementById('nfs').value;
+            const cnpj = document.getElementById('cnpjTomador').value;
+            const tomador = document.getElementById('tomador').value.toUpperCase();
+            const status = document.getElementById('statusNota').value;
+            const retencao = document.getElementById('retencaoTipo').value;
+            const servico = parseFloat(document.getElementById('valorServico').value) || 0;
+            const iss = parseFloat(document.getElementById('valorIss').value) || 0;
+
+            if(id) {
+                const index = notas.findIndex(n => n.id == id);
+                if(index !== -1) {
+                    notas[index] = { id: Number(id), empresa, data, nfs, cnpj, tomador, status, retencao, servico, iss };
+                }
+            } else {
+                const novoId = notas.length > 0 ? Math.max(...notas.map(n => n.id)) + 1 : 1;
+                notas.push({ id: novoId, empresa, data, nfs, cnpj, tomador, status, retencao, servico, iss });
+            }
+
+            salvarLocalStorage();
+            closeModal('notaModal');
+            renderApp();
+        }
+
+        function editarNota(id) {
+            const nota = notas.find(n => n.id === id);
+            if(!nota) return;
+            document.getElementById('notaId').value = nota.id;
+            document.getElementById('empresa').value = nota.empresa;
+            document.getElementById('dataNota').value = nota.data;
+            document.getElementById('nfs').value = nota.nfs;
+            document.getElementById('cnpjTomador').value = nota.cnpj;
+            document.getElementById('tomador').value = nota.tomador;
+            document.getElementById('statusNota').value = nota.status;
+            document.getElementById('retencaoTipo').value = nota.retencao;
+            document.getElementById('valorServico').value = nota.servico;
+            document.getElementById('valorIss').value = nota.iss;
+            document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pen-to-square text-amber-400"></i> Editar Nota Fiscal';
+            openModal('notaModal');
+        }
+
+        function excluirNota(id) {
+            if(confirm('Tem certeza que deseja excluir este lançamento?')) {
+                notas = notas.filter(n => n.id !== id);
+                salvarLocalStorage();
+                renderApp();
+            }
+        }
+
+        function confirmarLimparTudo() {
+            if(confirm('ATENÇÃO: Deseja apagar todos os lançamentos do sistema?')) {
+                notas = [];
+                salvarLocalStorage();
+                renderApp();
+            }
+        }
+
+        function carregarAliquotasNaTela() {
+            const mesAno = document.getElementById('configMesAno').value;
+            if(!aliquotas[mesAno]) {
+                aliquotas[mesAno] = { SMM: { iss: 2.21, simples: 6.00 }, SIMONE: { iss: 3.21, simples: 13.50 } };
+            }
+            document.getElementById('smmIss').value = aliquotas[mesAno].SMM.iss;
+            document.getElementById('smmSimples').value = aliquotas[mesAno].SMM.simples;
+            document.getElementById('simoneIss').value = aliquotas[mesAno].SIMONE.iss;
+            document.getElementById('simoneSimples').value = aliquotas[mesAno].SIMONE.simples;
+        }
+
+        function salvarAliquotas() {
+            const mesAno = document.getElementById('configMesAno').value;
+            aliquotas[mesAno] = {
+                SMM: {
+                    iss: parseFloat(document.getElementById('smmIss').value) || 0,
+                    simples: parseFloat(document.getElementById('smmSimples').value) || 0
+                },
+                SIMONE: {
+                    iss: parseFloat(document.getElementById('simoneIss').value) || 0,
+                    simples: parseFloat(document.getElementById('simoneSimples').value) || 0
+                }
+            };
+            salvarLocalStorage();
+            closeModal('aliquotaModal');
+            renderApp();
+            alert('Alíquotas atualizadas com sucesso!');
+        }
+
+        // Função auxiliar robusta para converter datas da planilha (DD/MM/AAAA ou Serial do Excel) para AAAA-MM-DD
+        function converterDataExcel(valorData) {
+            if (!valorData) return '2026-10-15';
+            
+            // Se vier no formato texto "DD/MM/AAAA" (ex: "25/09/2026")
+            if (typeof valorData === 'string' && valorData.includes('/')) {
+                const partes = valorData.trim().split('/');
+                if (partes.length === 3) {
+                    let dia = partes[0].padStart(2, '0');
+                    let mes = partes[1].padStart(2, '0');
+                    let ano = partes[2];
+                    if (ano.length === 2) ano = '20' + ano;
+                    return `${ano}-${mes}-${dia}`;
+                }
+            }
+
+            // Se o Excel converter a data para número serial
+            if (typeof valorData === 'number') {
+                const dataObj = new Date(Math.round((valorData - (25567 + 2)) * 86400 * 1000));
+                if (!isNaN(dataObj.getTime())) {
+                    return dataObj.toISOString().split('T')[0];
+                }
+            }
+
+            return '2026-10-15';
+        }
+
+        function importarPlanilha(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const rows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                    
+                    let empresaAtual = 'SMM';
+                    let novosImportados = 0;
+
+                    rows.forEach(row => {
+                        const rowStr = row.join(' ').toUpperCase();
+                        if(rowStr.includes('EMPRESA: SMM')) empresaAtual = 'SMM';
+                        if(rowStr.includes('EMPRESA: SIMONE')) empresaAtual = 'SIMONE';
+
+                        // Verifica se a linha contém dados de nota fiscal válidos (NFS-e e valor de serviço)
+                        if(row.length >= 6 && typeof row[1] !== 'undefined' && !isNaN(row[1])) {
+                            let dataBruta = row[0];
+                            let nfs = String(row[1]);
+                            let cnpj = String(row[2] || '');
+                            let tomador = String(row[3] || 'TOMADOR NÃO INFORMADO').toUpperCase();
+                            let status = String(row[4] || 'Emitida');
+                            let servico = parseFloat(row[5]) || 0;
+                            let iss = parseFloat(row[6]) || 0;
+
+                            if(servico > 0) {
+                                const novoId = notas.length > 0 ? Math.max(...notas.map(n => n.id)) + 1 + novosImportados : 1 + novosImportados;
+                                
+                                // Converte corretamente a data de cada linha individualmente
+                                let dataFormatada = converterDataExcel(dataBruta);
+
+                                notas.push({
+                                    id: novoId,
+                                    empresa: empresaAtual,
+                                    data: dataFormatada,
+                                    nfs: nfs,
+                                    cnpj: cnpj,
+                                    tomador: tomador,
+                                    status: status,
+                                    retencao: iss > 0 ? 'COM RETENÇÃO' : 'SEM RETENÇÃO',
+                                    servico: servico,
+                                    iss: iss
+                                });
+                                novosImportados++;
+                            }
+                        }
+                    });
+
+                    if(novosImportados > 0) {
+                        salvarLocalStorage();
+                        renderApp();
+                        alert(`Sucesso! ${novosImportados} notas fiscais importadas com suas respectivas datas preservadas.`);
+                    } else {
+                        alert('Arquivo lido, mas nenhuma linha de nota compatível foi detectada.');
+                    }
+                } catch(err) {
+                    alert('Erro ao processar planilha: ' + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function renderApp() {
+            const filtroEmpresa = document.getElementById('filterEmpresa').value;
+            const filtroMes = document.getElementById('filterMes').value;
+
+            let notasFiltradas = notas.filter(n => {
+                if(filtroEmpresa !== 'TODAS' && n.empresa !== filtroEmpresa) return false;
+                if(filtroMes !== 'TODOS') {
+                    const [ano, mes] = n.data.split('-');
+                    const mesAnoNota = `${mes}/${ano}`;
+                    if(mesAnoNota !== filtroMes) return false;
+                }
+                return true;
+            });
+
+            const tbody = document.getElementById('tabelaNotasBody');
+            tbody.innerHTML = '';
+            document.getElementById('contadorRegistros').innerText = `${notasFiltradas.length} registros`;
+
+            if(notasFiltradas.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-slate-400">Nenhum registro encontrado.</td></tr>`;
+            } else {
+                notasFiltradas.forEach(n => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-blue-900/20 transition border-b border-blue-900/20";
+                    tr.innerHTML = `
+                        <td class="p-3 font-bold text-amber-400">${n.empresa}</td>
+                        <td class="p-3 text-slate-300 text-xs">${n.data.split('-').reverse().join('/')}</td>
+                        <td class="p-3 font-semibold text-white">#${n.nfs}</td>
+                        <td class="p-3 text-xs text-slate-300">${n.cnpj}</td>
+                        <td class="p-3 text-xs text-slate-200 truncate max-w-xs" title="${n.tomador}">${n.tomador}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${n.status === 'Emitida' ? 'bg-emerald-950 text-emerald-400 border border-emerald-700/50' : 'bg-red-950 text-red-400 border border-red-700/50'}">${n.status}</span></td>
+                        <td class="p-3"><span class="text-[10px] px-2 py-0.5 rounded font-semibold ${n.retencao === 'COM RETENÇÃO' ? 'bg-amber-950/80 text-amber-400 border border-amber-700/50' : 'bg-slate-700 text-slate-300'}">${n.retencao}</span></td>
+                        <td class="p-3 text-right font-semibold text-white">${formatarMoeda(n.servico)}</td>
+                        <td class="p-3 text-right text-cyan-300">${formatarMoeda(n.iss)}</td>
+                        <td class="p-3 text-center space-x-2">
+                            <button onclick="editarNota(${n.id})" class="text-blue-400 hover:text-amber-400 transition cursor-pointer" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="excluirNota(${n.id})" class="text-red-400 hover:text-red-300 transition cursor-pointer" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            const competenciasAtivas = filtroMes === 'TODOS' ? '10/2026' : filtroMes;
+            const aliqSmm = aliquotas[competenciasAtivas]?.SMM || { iss: 2.21, simples: 6.00 };
+            const aliqSimone = aliquotas[competenciasAtivas]?.SIMONE || { iss: 3.21, simples: 13.50 };
+
+            const notasSmm = notasFiltradas.filter(n => n.empresa === 'SMM');
+            const smmSemRetencao = notasSmm.filter(n => n.retencao === 'SEM RETENÇÃO').reduce((acc, n) => acc + n.servico, 0);
+            const smmComRetencao = notasSmm.filter(n => n.retencao === 'COM RETENÇÃO').reduce((acc, n) => acc + n.servico, 0);
+            const smmTotalFats = smmSemRetencao + smmComRetencao;
+            const smmIssTotal = notasSmm.reduce((acc, n) => acc + n.iss, 0);
+            
+            const smmAliqTotal = aliqSmm.iss + aliqSmm.simples;
+            const smmEstimativaPagar = smmTotalFats * (smmAliqTotal / 100);
+
+            const notasSimone = notasFiltradas.filter(n => n.empresa === 'SIMONE');
+            const simoneSemRetencao = notasSimone.filter(n => n.retencao === 'SEM RETENÇÃO').reduce((acc, n) => acc + n.servico, 0);
+            const simoneComRetencao = notasSimone.filter(n => n.retencao === 'COM RETENÇÃO').reduce((acc, n) => acc + n.servico, 0);
+            const simoneTotalFats = simoneSemRetencao + simoneComRetencao;
+            const simoneIssTotal = notasSimone.reduce((acc, n) => acc + n.iss, 0);
+            
+            const simoneAliqTotal = aliqSimone.iss + aliqSimone.simples;
+            const simoneEstimativaPagar = simoneTotalFats * (simoneAliqTotal / 100);
+
+            const totalFaturamento = smmTotalFats + simoneTotalFats;
+            const totalSemRetencao = smmSemRetencao + simoneSemRetencao;
+            const totalComRetencao = smmComRetencao + simoneComRetencao;
+            const totalIss = smmIssTotal + simoneIssTotal;
+            
+            const totalImpostosDasEmpresas = smmEstimativaPagar + simoneEstimativaPagar;
+            const totalSimplesApurado = totalImpostosDasEmpresas - totalIss;
+
+            document.getElementById('kpiFaturamento').innerText = formatarMoeda(totalFaturamento);
+            document.getElementById('kpiSemRetencao').innerText = formatarMoeda(totalSemRetencao);
+            document.getElementById('kpiComRetencao').innerText = formatarMoeda(totalComRetencao);
+            document.getElementById('kpiIss').innerText = formatarMoeda(totalIss);
+            document.getElementById('kpiSimples').innerText = formatarMoeda(totalSimplesApurado);
+            document.getElementById('kpiTotalImpostos').innerText = formatarMoeda(totalImpostosDasEmpresas);
+
+            const containerResumo = document.getElementById('resumoEmpresasContainer');
+            containerResumo.innerHTML = `
+                <!-- Bloco SMM -->
+                <div class="bg-gradient-to-br from-slate-900 to-blue-950 p-5 rounded-2xl border border-blue-700/50 shadow-xl space-y-4">
+                    <div class="flex justify-between items-center border-b border-blue-800/60 pb-3">
+                        <h4 class="font-black text-amber-400 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-building-columns"></i> EMPRESA: SMM
+                        </h4>
+                        <div class="text-right text-xs text-slate-300">
+                            <span>ISS: <strong>${aliqSmm.iss}%</strong> | Simples: <strong>${aliqSmm.simples}%</strong></span>
+                            <span class="block text-amber-400 font-bold">Total Combinado: ${smmAliqTotal.toFixed(2)}%</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div class="bg-blue-950/60 p-2 rounded-lg border border-blue-800/40">
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold">Sem Retenção</span>
+                            <p class="text-xs font-bold text-red-400 mt-1">${formatarMoeda(smmSemRetencao)}</p>
+                        </div>
+                        <div class="bg-blue-950/60 p-2 rounded-lg border border-blue-800/40">
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold">Com Retenção</span>
+                            <p class="text-xs font-bold text-emerald-400 mt-1">${formatarMoeda(smmComRetencao)}</p>
+                        </div>
+                        <div class="bg-amber-500/10 p-2 rounded-lg border border-amber-500/30">
+                            <span class="text-[10px] text-amber-300 uppercase font-bold">Total Faturado</span>
+                            <p class="text-xs font-black text-amber-400 mt-1">${formatarMoeda(smmTotalFats)}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between text-xs pt-2 border-t border-blue-800/40 text-slate-300">
+                        <span>ISS Retido: <strong class="text-white">${formatarMoeda(smmIssTotal)}</strong></span>
+                        <span>Estimativa Imposto a Pagar: <strong class="text-amber-400 font-bold text-sm">${formatarMoeda(smmEstimativaPagar)}</strong></span>
+                    </div>
+                </div>
+
+                <!-- Bloco SIMONE -->
+                <div class="bg-gradient-to-br from-slate-900 to-blue-950 p-5 rounded-2xl border border-blue-700/50 shadow-xl space-y-4">
+                    <div class="flex justify-between items-center border-b border-blue-800/60 pb-3">
+                        <h4 class="font-black text-amber-400 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-building-user"></i> EMPRESA: SIMONE
+                        </h4>
+                        <div class="text-right text-xs text-slate-300">
+                            <span>ISS: <strong>${aliqSimone.iss}%</strong> | Simples: <strong>${aliqSimone.simples}%</strong></span>
+                            <span class="block text-amber-400 font-bold">Total Combinado: ${simoneAliqTotal.toFixed(2)}%</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div class="bg-blue-950/60 p-2 rounded-lg border border-blue-800/40">
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold">Sem Retenção</span>
+                            <p class="text-xs font-bold text-red-400 mt-1">${formatarMoeda(simoneSemRetencao)}</p>
+                        </div>
+                        <div class="bg-blue-950/60 p-2 rounded-lg border border-blue-800/40">
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold">Com Retenção</span>
+                            <p class="text-xs font-bold text-emerald-400 mt-1">${formatarMoeda(simoneComRetencao)}</p>
+                        </div>
+                        <div class="bg-amber-500/10 p-2 rounded-lg border border-amber-500/30">
+                            <span class="text-[10px] text-amber-300 uppercase font-bold">Total Faturado</span>
+                            <p class="text-xs font-black text-amber-400 mt-1">${formatarMoeda(simoneTotalFats)}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between text-xs pt-2 border-t border-blue-800/40 text-slate-300">
+                        <span>ISS Retido: <strong class="text-white">${formatarMoeda(simoneIssTotal)}</strong></span>
+                        <span>Estimativa Imposto a Pagar: <strong class="text-amber-400 font-bold text-sm">${formatarMoeda(simoneEstimativaPagar)}</strong></span>
+                    </div>
+                </div>
+            `;
+
+            const divVantagem = document.getElementById('vantagemFiscalContainer');
+            divVantagem.innerHTML = `
+                <div class="bg-slate-900/80 p-3 rounded-xl border border-blue-700/40">
+                    <span class="text-xs text-slate-400 block">Carga Tributária Efetiva SMM</span>
+                    <span class="text-lg font-bold text-amber-400">${smmAliqTotal.toFixed(2)}%</span>
+                    <p class="text-[11px] text-slate-300 mt-1">Imposto estimado: ${formatarMoeda(smmEstimativaPagar)}</p>
+                </div>
+                <div class="bg-slate-900/80 p-3 rounded-xl border border-blue-700/40">
+                    <span class="text-xs text-slate-400 block">Carga Tributária Efetiva SIMONE</span>
+                    <span class="text-lg font-bold text-amber-400">${simoneAliqTotal.toFixed(2)}%</span>
+                    <p class="text-[11px] text-slate-300 mt-1">Imposto estimado: ${formatarMoeda(simoneEstimativaPagar)}</p>
+                </div>
+                <div class="bg-gradient-to-br from-blue-900 to-amber-950/60 p-3 rounded-xl border border-amber-500/40 flex flex-col justify-center">
+                    <span class="text-xs text-amber-300 font-semibold uppercase tracking-wider">Recomendação Estratégica</span>
+                    <p class="text-sm font-bold text-white mt-1">Faturar prioritariamente pela <span class="text-amber-400 uppercase underline">${smmAliqTotal <= simoneAliqTotal ? "SMM" : "SIMONE"}</span></p>
+                    <span class="text-[10px] text-slate-300 mt-0.5">Menor alíquota nominal total aplicada.</span>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
